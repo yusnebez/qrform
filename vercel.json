@@ -1,7 +1,3 @@
 {
-  "framework": "nextjs",
-  "env": {
-    "MONGODB_URI": "@mongodb_uri",
-    "NEXT_PUBLIC_APP_URL": "${VERCEL_URL}"
-  }
+  "framework": "nextjs"
 }
