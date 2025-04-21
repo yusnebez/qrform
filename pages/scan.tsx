@@ -132,7 +132,7 @@ export default function ScanPage() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[100dvh] max-h-[100dvh] overflow-hidden p-1 sm:p-6 bg-white">
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] sm:min-h-0 sm:max-h-none sm:overflow-visible max-h-[100dvh] overflow-hidden p-1 sm:p-6 bg-white">
       <h1 className="text-lg sm:text-2xl font-bold mb-2 text-blue-600">Escanear QR</h1>
       {error && (
         <div className="bg-red-100 text-red-800 p-2 rounded-lg mb-2 text-center w-full max-w-xs sm:max-w-md mx-auto text-sm sm:text-base">
@@ -153,8 +153,8 @@ export default function ScanPage() {
       {/* Vista de cámara personalizada */}
       <div
         id="reader"
-        className={`w-full max-w-[340px] aspect-square mx-auto mb-2 ${cameraActive ? '' : 'hidden'}`}
-        style={{ maxWidth: '95vw', minHeight: 0 }}
+        className={`w-full max-w-[400px] mx-auto mb-4 sm:mb-8 rounded-lg shadow-lg ${cameraActive ? '' : 'hidden'}`}
+        style={{ maxWidth: '98vw', minHeight: 0, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
       />
       {/* Resultado */}
       {result && (
