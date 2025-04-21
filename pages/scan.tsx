@@ -59,7 +59,8 @@ export default function ScanPage() {
     }
   };
 
-  const resetScan = async () => {
+  // Reinicio robusto antes de reactivar cámara
+  const robustResetAndActivate = async () => {
     if (scannerRef.current) {
       try {
         await scannerRef.current.stop();
@@ -70,7 +71,12 @@ export default function ScanPage() {
     setError('');
     setScanning(false);
     setCameraActive(false);
-    setTimeout(() => {}, 100);
+    // Espera un ciclo de renderizado antes de reactivar cámara
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        activarCamara();
+      }, 200);
+    });
   };
 
   const onScanSuccess = async (decodedText: string) => {
@@ -97,8 +103,7 @@ export default function ScanPage() {
           if (prev === 1) {
             clearInterval(countdownRef.current!);
             setCountdown(null);
-            resetScan();
-            activarCamara();
+            robustResetAndActivate();
             return null;
           }
           return prev! - 1;
@@ -115,8 +120,7 @@ export default function ScanPage() {
   const handleNuevoEscaneo = async () => {
     if (countdownRef.current) clearInterval(countdownRef.current);
     setCountdown(null);
-    await resetScan();
-    activarCamara();
+    await robustResetAndActivate();
   };
 
   // Limpiar escáner al desmontar
@@ -189,7 +193,7 @@ export default function ScanPage() {
       {scanning && !result && (
         <div className="flex flex-col items-center w-full max-w-xs sm:max-w-md mx-auto mt-1">
           <button
-            onClick={resetScan}
+            onClick={robustResetAndActivate}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full text-base sm:text-lg"
           >
             Nuevo escaneo
