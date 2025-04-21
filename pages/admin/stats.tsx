@@ -62,59 +62,59 @@ export default function StatsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Estadísticas de Acceso</h1>
+    <div className="p-2 sm:p-4 space-y-8 w-full max-w-6xl mx-auto">
+      <h1 className="text-lg sm:text-2xl font-bold">Estadísticas de Acceso</h1>
 
       {stats && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-semibold text-gray-700">Total de Abonados</h2>
-              <p className="text-3xl font-bold text-blue-600">{stats.totalFans}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-700">Total de Abonados</h2>
+              <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.totalFans}</p>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-semibold text-gray-700">Accesos Hoy</h2>
-              <p className="text-3xl font-bold text-green-600">{stats.accessToday}</p>
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-700">Accesos Hoy</h2>
+              <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.accessToday}</p>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-semibold text-gray-700">Última Semana</h2>
-              <p className="text-3xl font-bold text-yellow-600">{stats.accessLastWeek}</p>
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-700">Última Semana</h2>
+              <p className="text-2xl sm:text-3xl font-bold text-yellow-600">{stats.accessLastWeek}</p>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-semibold text-gray-700">Último Mes</h2>
-              <p className="text-3xl font-bold text-purple-600">{stats.accessLastMonth}</p>
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-700">Último Mes</h2>
+              <p className="text-2xl sm:text-3xl font-bold text-purple-600">{stats.accessLastMonth}</p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4">Últimos Accesos</h2>
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4">Últimos Accesos</h2>
             
             {stats.lastAccesses.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
+                <table className="min-w-full bg-white text-xs sm:text-sm">
                   <thead>
                     <tr>
-                      <th className="py-2 px-4 border-b text-left">Nombre</th>
-                      <th className="py-2 px-4 border-b text-left">Email</th>
-                      <th className="py-2 px-4 border-b text-left">Último Acceso</th>
+                      <th className="py-2 px-2 sm:px-4 border-b text-left">Nombre</th>
+                      <th className="py-2 px-2 sm:px-4 border-b text-left">Email</th>
+                      <th className="py-2 px-2 sm:px-4 border-b text-left">Último Acceso</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stats.lastAccesses.map((access, index) => (
                       <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                        <td className="py-2 px-4 border-b">{access.name}</td>
-                        <td className="py-2 px-4 border-b">{access.email}</td>
-                        <td className="py-2 px-4 border-b">{formatDate(access.lastAccess)}</td>
+                        <td className="py-2 px-2 sm:px-4 border-b break-words">{access.name}</td>
+                        <td className="py-2 px-2 sm:px-4 border-b break-words">{access.email}</td>
+                        <td className="py-2 px-2 sm:px-4 border-b">{formatDate(access.lastAccess)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             ) : (
-              <p className="text-gray-500 italic">No hay registros de acceso</p>
+              <p className="text-gray-500 italic mt-2">No hay registros de acceso</p>
             )}
           </div>
         </>

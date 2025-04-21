@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
 import Alert from '@/components/Alert';
 
@@ -10,133 +10,143 @@ interface ScanResult {
 }
 
 export default function ScanPage() {
-  const [scanning, setScanning] = useState(true);
+  const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState('');
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const scannerRef = useRef<any>(null);
 
-  const resetScan = () => {
-    // Limpiar el escáner anterior si existe
-    if (scannerRef.current) {
-      try {
-        scannerRef.current.clear();
-      } catch (error) {
-        console.error("Error al limpiar el escáner:", error);
-      }
-    }
-
-    // Reiniciar estados
-    setScanning(true);
-    setResult(null);
+  // Iniciar cámara personalizada
+  const activarCamara = async () => {
     setError('');
-    
-    // Pequeño retraso para asegurar que el DOM se ha actualizado
-    setTimeout(() => {
-      // Crear un nuevo escáner
-      if (typeof window !== 'undefined') {
-        const scanner = new Html5QrcodeScanner(
-          "reader",
-          { 
-            qrbox: 250,
-            fps: 5 
-          },
-          false
+    setResult(null);
+    setScanning(true);
+    setCameraActive(true);
+    setTimeout(async () => {
+      try {
+        if (scannerRef.current) {
+          await scannerRef.current.stop();
+          scannerRef.current.clear();
+        }
+        const qr = new Html5Qrcode('reader');
+        scannerRef.current = qr;
+        qr.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: 250 },
+          onScanSuccess,
+          onScanError
         );
-        scannerRef.current = scanner;
-        scanner.render(onScanSuccess, onScanError);
+      } catch (err: any) {
+        setError('No se pudo acceder a la cámara.');
+        setScanning(false);
+        setCameraActive(false);
       }
     }, 100);
   };
 
-  const onScanSuccess = async (decodedText: string) => {
+  const stopScanner = async () => {
     setScanning(false);
-    
-    try {
-      // Limpiar el escáner
-      if (scannerRef.current) {
+    setCameraActive(false);
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
         scannerRef.current.clear();
+      } catch (error) {
+        // ignore
       }
-      
-      // Verificar el código QR
+    }
+  };
+
+  const resetScan = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+      } catch (error) {}
+    }
+    setResult(null);
+    setError('');
+    setScanning(false);
+    setCameraActive(false);
+    setTimeout(() => {}, 100);
+  };
+
+  const onScanSuccess = async (decodedText: string) => {
+    await stopScanner();
+    try {
       const response = await axios.get(`/api/check?u=${decodedText}`);
       setResult(response.data);
     } catch (err: any) {
-      console.error('Error verificando QR:', err);
-      setError(err.response?.data?.error || 'Error al verificar el código QR');
+      setError(err.response?.data?.error || 'Error verificando el código QR.');
     }
   };
 
   const onScanError = (err: string) => {
-    console.error(err);
-    // No mostrar errores de escaneo al usuario, solo en consola
+    // Solo loguear
+    // console.error(err);
   };
 
+  // Limpiar escáner al desmontar
   useEffect(() => {
-    // Verificamos que estemos en el navegador
-    if (typeof window !== 'undefined') {
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        { 
-          qrbox: 250,
-          fps: 5 
-        },
-        false
-      );
-      
-      scannerRef.current = scanner;
-      scanner.render(onScanSuccess, onScanError);
-
-      // Limpieza al desmontar
-      return () => {
-        if (scannerRef.current) {
-          try {
-            scannerRef.current.clear();
-          } catch (error) {
-            console.error("Error al limpiar el escáner:", error);
-          }
-        }
-      };
-    }
+    return () => {
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.stop();
+          scannerRef.current.clear();
+        } catch (error) {}
+      }
+    };
   }, []);
 
   return (
-    <div className="max-w-lg mx-auto p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">Escáner QR</h1>
-      
+    <div className="flex flex-col items-center justify-center min-h-[80vh] p-2 sm:p-6">
+      <h1 className="text-xl sm:text-3xl font-bold mb-4 text-blue-600">Escanear QR</h1>
       {error && (
-        <Alert 
-          type="error" 
-          message={error} 
-          onClose={() => setError('')}
-        />
+        <div className="bg-red-100 text-red-800 p-2 rounded-lg mb-4 text-center w-full max-w-xs sm:max-w-md mx-auto">
+          {error}
+        </div>
       )}
-      
-      {scanning ? (
-        <div id="reader" className="w-full mx-auto"></div>
-      ) : result ? (
-        <div className={`p-6 rounded-lg shadow-md text-center ${result.access ? 'bg-green-100' : 'bg-red-100'}`}>
-          {result.access ? (
-            <>
-              <div className="text-5xl mb-4">✅</div>
-              <h2 className="text-xl font-bold text-green-700 mb-2">Acceso Permitido</h2>
-              {result.name && <p className="text-lg">Bienvenido/a, {result.name}</p>}
-            </>
-          ) : (
-            <>
-              <div className="text-5xl mb-4">⛔</div>
-              <h2 className="text-xl font-bold text-red-700 mb-2">Acceso Denegado</h2>
-              {result.message && <p className="text-lg">{result.message}</p>}
-            </>
-          )}
-          
-          <button 
-            onClick={resetScan}
-            className="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+      {/* Botones de acción */}
+      {!scanning && !result && (
+        <div className="flex flex-col gap-4 w-full max-w-xs sm:max-w-md mx-auto mb-4">
+          <button
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full"
+            onClick={activarCamara}
           >
-            Escanear Otro Código
+            Activar cámara
           </button>
         </div>
-      ) : null}
+      )}
+      {/* Vista de cámara personalizada */}
+      <div id="reader" className={`w-full max-w-xs sm:max-w-md mx-auto mb-4 ${cameraActive ? '' : 'hidden'}`} />
+      {/* Resultado */}
+      {result && (
+        <div className="w-full max-w-xs sm:max-w-md mx-auto">
+          {result.access ? (
+            <div className="bg-green-100 text-green-800 p-4 rounded-lg mb-4 text-center">
+              <h2 className="font-bold text-lg mb-2">Acceso concedido</h2>
+              <p>{result.name}</p>
+              <p>{result.message}</p>
+            </div>
+          ) : (
+            <div className="bg-red-100 text-red-800 p-4 rounded-lg mb-4 text-center">
+              <h2 className="font-bold text-lg mb-2">Acceso denegado</h2>
+              <p>{result.message}</p>
+            </div>
+          )}
+        </div>
+      )}
+      {/* Botón de reinicio */}
+      {(result || scanning) && (
+        <div className="flex flex-col items-center w-full max-w-xs sm:max-w-md mx-auto mt-2">
+          <button
+            onClick={resetScan}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full"
+          >
+            Nuevo escaneo
+          </button>
+        </div>
+      )}
     </div>
   );
 }
