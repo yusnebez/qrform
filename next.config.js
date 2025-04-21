@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  // Configuración para Vercel
+  output: 'standalone',
 }
 
 module.exports = nextConfig
