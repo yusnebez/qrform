@@ -15,6 +15,8 @@ export default function ScanPage() {
   const [error, setError] = useState('');
   const [cameraActive, setCameraActive] = useState(false);
   const scannerRef = useRef<any>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   // Iniciar cámara personalizada
   const activarCamara = async () => {
@@ -86,6 +88,37 @@ export default function ScanPage() {
     // console.error(err);
   };
 
+  // Lanzar cuenta atrás y reactivar cámara
+  useEffect(() => {
+    if (result) {
+      setCountdown(3);
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev === 1) {
+            clearInterval(countdownRef.current!);
+            setCountdown(null);
+            resetScan();
+            activarCamara();
+            return null;
+          }
+          return prev! - 1;
+        });
+      }, 1000);
+    } else {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      setCountdown(null);
+    }
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+  }, [result]);
+
+  // Nuevo escaneo inmediato (detiene countdown y reactiva cámara)
+  const handleNuevoEscaneo = async () => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    setCountdown(null);
+    await resetScan();
+    activarCamara();
+  };
+
   // Limpiar escáner al desmontar
   useEffect(() => {
     return () => {
@@ -99,18 +132,18 @@ export default function ScanPage() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] p-2 sm:p-6">
-      <h1 className="text-xl sm:text-3xl font-bold mb-4 text-blue-600">Escanear QR</h1>
+    <div className="flex flex-col items-center justify-center min-h-[100dvh] max-h-[100dvh] overflow-hidden p-1 sm:p-6 bg-white">
+      <h1 className="text-lg sm:text-2xl font-bold mb-2 text-blue-600">Escanear QR</h1>
       {error && (
-        <div className="bg-red-100 text-red-800 p-2 rounded-lg mb-4 text-center w-full max-w-xs sm:max-w-md mx-auto">
+        <div className="bg-red-100 text-red-800 p-2 rounded-lg mb-2 text-center w-full max-w-xs sm:max-w-md mx-auto text-sm sm:text-base">
           {error}
         </div>
       )}
       {/* Botones de acción */}
       {!scanning && !result && (
-        <div className="flex flex-col gap-4 w-full max-w-xs sm:max-w-md mx-auto mb-4">
+        <div className="flex flex-col gap-3 w-full max-w-xs sm:max-w-md mx-auto mb-2">
           <button
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full text-base sm:text-lg"
             onClick={activarCamara}
           >
             Activar cámara
@@ -118,30 +151,46 @@ export default function ScanPage() {
         </div>
       )}
       {/* Vista de cámara personalizada */}
-      <div id="reader" className={`w-full max-w-xs sm:max-w-md mx-auto mb-4 ${cameraActive ? '' : 'hidden'}`} />
+      <div
+        id="reader"
+        className={`w-full max-w-[340px] aspect-square mx-auto mb-2 ${cameraActive ? '' : 'hidden'}`}
+        style={{ maxWidth: '95vw', minHeight: 0 }}
+      />
       {/* Resultado */}
       {result && (
         <div className="w-full max-w-xs sm:max-w-md mx-auto">
           {result.access ? (
-            <div className="bg-green-100 text-green-800 p-4 rounded-lg mb-4 text-center">
-              <h2 className="font-bold text-lg mb-2">Acceso concedido</h2>
-              <p>{result.name}</p>
-              <p>{result.message}</p>
+            <div className="bg-green-100 text-green-800 p-3 rounded-lg mb-2 text-center">
+              <h2 className="font-bold text-base sm:text-lg mb-1">Acceso concedido</h2>
+              <p className="text-sm sm:text-base">{result.name}</p>
+              <p className="text-sm sm:text-base">{result.message}</p>
             </div>
           ) : (
-            <div className="bg-red-100 text-red-800 p-4 rounded-lg mb-4 text-center">
-              <h2 className="font-bold text-lg mb-2">Acceso denegado</h2>
-              <p>{result.message}</p>
+            <div className="bg-red-100 text-red-800 p-3 rounded-lg mb-2 text-center">
+              <h2 className="font-bold text-base sm:text-lg mb-1">Acceso denegado</h2>
+              <p className="text-sm sm:text-base">{result.message}</p>
             </div>
           )}
+          {/* Botón y cuenta atrás */}
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={handleNuevoEscaneo}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full text-base sm:text-lg"
+            >
+              Nuevo escaneo{countdown !== null ? ` (${countdown})` : ''}
+            </button>
+            {countdown !== null && (
+              <p className="text-blue-700 font-semibold text-lg sm:text-xl animate-pulse">La cámara se reactivará en {countdown} segundo{countdown === 1 ? '' : 's'}...</p>
+            )}
+          </div>
         </div>
       )}
-      {/* Botón de reinicio */}
-      {(result || scanning) && (
-        <div className="flex flex-col items-center w-full max-w-xs sm:max-w-md mx-auto mt-2">
+      {/* Botón de reinicio (solo si no hay resultado) */}
+      {scanning && !result && (
+        <div className="flex flex-col items-center w-full max-w-xs sm:max-w-md mx-auto mt-1">
           <button
             onClick={resetScan}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full text-base sm:text-lg"
           >
             Nuevo escaneo
           </button>
