@@ -33,6 +33,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (error) {
       res.status(500).json({ error: 'Error fetching fans' });
     }
+  } else if (req.method === 'DELETE') {
+    try {
+      const { id } = req.query;
+      
+      if (!id) {
+        return res.status(400).json({ error: 'Se requiere ID del abonado' });
+      }
+      
+      const deletedFan = await Fan.findByIdAndDelete(id);
+      
+      if (!deletedFan) {
+        return res.status(404).json({ error: 'Abonado no encontrado' });
+      }
+      
+      return res.status(200).json({ message: 'Abonado eliminado correctamente' });
+    } catch (error) {
+      console.error('Error eliminando abonado:', error);
+      return res.status(500).json({ error: 'Error al eliminar abonado' });
+    }
   } else {
     res.status(405).json({ error: 'Method not allowed' });
   }

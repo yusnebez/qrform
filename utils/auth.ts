@@ -2,8 +2,8 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Credenciales de administrador (en producción deberían estar en variables de entorno)
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD = 'Prueba123'; // Cambia esto por la contraseña que prefieras
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 // Middleware para proteger rutas de API
 export function withAuth(handler: any) {

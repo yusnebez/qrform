@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import axios from 'axios';
 import Alert from '@/components/Alert';
@@ -13,24 +13,39 @@ export default function ScanPage() {
   const [scanning, setScanning] = useState(true);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState('');
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   const resetScan = () => {
+    // Limpiar el escáner anterior si existe
+    if (scannerRef.current) {
+      try {
+        scannerRef.current.clear();
+      } catch (error) {
+        console.error("Error al limpiar el escáner:", error);
+      }
+    }
+
+    // Reiniciar estados
     setScanning(true);
     setResult(null);
     setError('');
     
-    // Reiniciar el escáner
-    if (typeof window !== 'undefined') {
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        { 
-          qrbox: 250,
-          fps: 5 
-        },
-        false
-      );
-      scanner.render(onScanSuccess, onScanError);
-    }
+    // Pequeño retraso para asegurar que el DOM se ha actualizado
+    setTimeout(() => {
+      // Crear un nuevo escáner
+      if (typeof window !== 'undefined') {
+        const scanner = new Html5QrcodeScanner(
+          "reader",
+          { 
+            qrbox: 250,
+            fps: 5 
+          },
+          false
+        );
+        scannerRef.current = scanner;
+        scanner.render(onScanSuccess, onScanError);
+      }
+    }, 100);
   };
 
   const onScanSuccess = async (decodedText: string) => {
@@ -38,12 +53,9 @@ export default function ScanPage() {
     
     try {
       // Limpiar el escáner
-      const scanner = new Html5QrcodeScanner(
-        "reader",
-        { qrbox: 250, fps: 5 },
-        false
-      );
-      scanner.clear();
+      if (scannerRef.current) {
+        scannerRef.current.clear();
+      }
       
       // Verificar el código QR
       const response = await axios.get(`/api/check?u=${decodedText}`);
@@ -70,12 +82,19 @@ export default function ScanPage() {
         },
         false
       );
-
+      
+      scannerRef.current = scanner;
       scanner.render(onScanSuccess, onScanError);
 
       // Limpieza al desmontar
       return () => {
-        scanner.clear();
+        if (scannerRef.current) {
+          try {
+            scannerRef.current.clear();
+          } catch (error) {
+            console.error("Error al limpiar el escáner:", error);
+          }
+        }
       };
     }
   }, []);
