@@ -68,10 +68,6 @@ export default function ScanPage() {
         await scannerRef.current.stop();
         scannerRef.current.clear();
       } catch (error) {}
-      // Forzar liberación de cámaras si está disponible
-      if (typeof Html5Qrcode.releaseAllCameras === 'function') {
-        try { await Html5Qrcode.releaseAllCameras(); } catch (e) {}
-      }
     }
     setResult(null);
     setError('');
@@ -99,11 +95,8 @@ export default function ScanPage() {
     }, 300);
   };
 
-  // Forzar liberación de cámaras y recarga si es necesario
-  const forceReleaseAndReload = () => {
-    if (typeof Html5Qrcode.releaseAllCameras === 'function') {
-      Html5Qrcode.releaseAllCameras();
-    }
+  // Forzar recarga si es necesario
+  const forceReload = () => {
     window.location.reload();
   };
 
@@ -172,7 +165,7 @@ export default function ScanPage() {
           {error.includes('cámara') && (
             <button
               className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-              onClick={forceReleaseAndReload}
+              onClick={forceReload}
             >
               Reintentar
             </button>
