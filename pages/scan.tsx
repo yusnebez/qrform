@@ -141,29 +141,6 @@ export default function ScanPage() {
     }
   }, [result, cancelReload]);
 
-  // Auto-click en "Activar cámara" al cargar o tras navegar desde /scan
-  useEffect(() => {
-    if (!scanning && !result && !showLoadingCamera) {
-      const btn = document.getElementById('btn-activar-camara');
-      if (btn) {
-        btn.click();
-      }
-    }
-  }, [scanning, result, showLoadingCamera]);
-
-  // Detectar si la página fue abierta desde /scan (ej: al pulsar "Escanear QR" en inicio) y auto-activar cámara
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const url = window.location.pathname;
-      if (url === '/scan') {
-        setTimeout(() => {
-          const btn = document.getElementById('btn-activar-camara');
-          if (btn) btn.click();
-        }, 200);
-      }
-    }
-  }, []);
-
   // Limpiar escáner al desmontar
   useEffect(() => {
     return () => {
