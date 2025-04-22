@@ -14,6 +14,7 @@ export default function ScanPage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState('');
   const [cameraActive, setCameraActive] = useState(false);
+  const [preparandoCamara, setPreparandoCamara] = useState(false);
   const scannerRef = useRef<any>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,7 +60,7 @@ export default function ScanPage() {
     }
   };
 
-  // Reinicio robusto antes de reactivar cámara
+  // Reinicio robusto antes de reactivar cámara (elimina y recrea el div del reader)
   const robustResetAndActivate = async () => {
     if (scannerRef.current) {
       try {
@@ -71,12 +72,22 @@ export default function ScanPage() {
     setError('');
     setScanning(false);
     setCameraActive(false);
-    // Espera un ciclo de renderizado antes de reactivar cámara
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        activarCamara();
-      }, 200);
-    });
+    setPreparandoCamara(true);
+    // Elimina el div del reader y lo recrea limpio
+    const readerDiv = document.getElementById('reader');
+    if (readerDiv) {
+      readerDiv.remove();
+      const newDiv = document.createElement('div');
+      newDiv.id = 'reader';
+      newDiv.className = readerDiv.className;
+      Object.assign(newDiv.style, readerDiv.style);
+      readerDiv.parentNode?.insertBefore(newDiv, readerDiv.nextSibling);
+    }
+    // Espera más antes de reactivar la cámara
+    setTimeout(() => {
+      setPreparandoCamara(false);
+      activarCamara();
+    }, 400);
   };
 
   const onScanSuccess = async (decodedText: string) => {
@@ -159,7 +170,13 @@ export default function ScanPage() {
         id="reader"
         className={`w-full max-w-[400px] mx-auto mb-4 sm:mb-8 rounded-lg shadow-lg ${cameraActive ? '' : 'hidden'}`}
         style={{ maxWidth: '98vw', minHeight: 0, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
-      />
+      >
+        {preparandoCamara && (
+          <div className="w-full text-center text-blue-600 py-4 animate-pulse text-base sm:text-lg font-semibold">
+            Preparando cámara...
+          </div>
+        )}
+      </div>
       {/* Resultado */}
       {result && (
         <div className="w-full max-w-xs sm:max-w-md mx-auto">
