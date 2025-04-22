@@ -68,18 +68,20 @@ export default function ScanPage() {
         await scannerRef.current.stop();
         scannerRef.current.clear();
       } catch (error) {}
+      // Forzar liberación de cámaras si está disponible
+      if (typeof Html5Qrcode.releaseAllCameras === 'function') {
+        try { await Html5Qrcode.releaseAllCameras(); } catch (e) {}
+      }
     }
     setResult(null);
     setError('');
     setScanning(false);
     setCameraActive(false);
     setPreparandoCamara(true);
-    setShowReader(false); // Fuerza desmontaje del div
+    setShowReader(false);
     setTimeout(async () => {
-      setShowReader(true); // React lo vuelve a montar limpio
-      // Espera más antes de reactivar la cámara
+      setShowReader(true);
       setTimeout(async () => {
-        // Comprueba si hay cámaras disponibles antes de intentar activar
         try {
           const devices = await Html5Qrcode.getCameras();
           if (!devices || devices.length === 0) {
@@ -91,10 +93,18 @@ export default function ScanPage() {
           activarCamara();
         } catch (e) {
           setPreparandoCamara(false);
-          setError('No se pudo acceder a la cámara. Verifica los permisos y que ningún otro programa la esté usando.');
+          setError('No se pudo acceder a la cámara. Verifica los permisos y que ningún otro programa la esté usando. Si el problema persiste, pulsa Reintentar.');
         }
-      }, 800);
-    }, 200);
+      }, 1000);
+    }, 300);
+  };
+
+  // Forzar liberación de cámaras y recarga si es necesario
+  const forceReleaseAndReload = () => {
+    if (typeof Html5Qrcode.releaseAllCameras === 'function') {
+      Html5Qrcode.releaseAllCameras();
+    }
+    window.location.reload();
   };
 
   const onScanSuccess = async (decodedText: string) => {
@@ -159,6 +169,14 @@ export default function ScanPage() {
       {error && (
         <div className="bg-red-100 text-red-800 p-2 rounded-lg mb-2 text-center w-full max-w-xs sm:max-w-md mx-auto text-sm sm:text-base">
           {error}
+          {error.includes('cámara') && (
+            <button
+              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+              onClick={forceReleaseAndReload}
+            >
+              Reintentar
+            </button>
+          )}
         </div>
       )}
       {/* Botones de acción */}
