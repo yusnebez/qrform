@@ -16,11 +16,9 @@ export default function ScanPage() {
   const [cameraActive, setCameraActive] = useState(false);
   const [preparandoCamara, setPreparandoCamara] = useState(false);
   const scannerRef = useRef<any>(null);
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
-  const [showReader, setShowReader] = useState(true);
   const [reloading, setReloading] = useState(false);
   const [cancelReload, setCancelReload] = useState(false);
+  const [showReader, setShowReader] = useState(true);
 
   // Iniciar cámara personalizada
   const activarCamara = async () => {
@@ -160,6 +158,32 @@ export default function ScanPage() {
     }
   }, [reloading, cancelReload, result]);
 
+  // Limpiar escáner al desmontar
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.stop();
+          scannerRef.current.clear();
+        } catch (error) {}
+      }
+    };
+  }, []);
+
+  // Recarga automática tras error de cámara
+  useEffect(() => {
+    if (
+      error &&
+      error.includes('cámara') &&
+      !preparandoCamara
+    ) {
+      const timeout = setTimeout(() => {
+        window.location.reload();
+      }, 2200); // Espera 2.2s para que el usuario vea el mensaje
+      return () => clearTimeout(timeout);
+    }
+  }, [error, preparandoCamara]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[100dvh] sm:min-h-0 sm:max-h-none sm:overflow-visible max-h-[100dvh] overflow-hidden p-1 sm:p-6 bg-white">
       <h1 className="text-lg sm:text-2xl font-bold mb-2 text-blue-600">Escanear QR</h1>
@@ -171,44 +195,20 @@ export default function ScanPage() {
           )}
         </div>
       )}
-      {/* Botones de acción */}
-      {!scanning && !result && (
-        <div className="flex flex-col gap-3 w-full max-w-xs sm:max-w-md mx-auto mb-2">
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full text-base sm:text-lg"
-            onClick={activarCamara}
-          >
-            Activar cámara
-          </button>
-        </div>
-      )}
-      {/* Vista de cámara personalizada */}
-      {showReader && (
-        <div
-          id="reader"
-          className={`w-full max-w-[400px] mx-auto mb-4 sm:mb-8 rounded-lg shadow-lg ${cameraActive ? '' : 'hidden'}`}
-          style={{ maxWidth: '98vw', minHeight: 0, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
-        >
-          {preparandoCamara && (
-            <div className="w-full text-center text-blue-600 py-4 animate-pulse text-base sm:text-lg font-semibold">
-              Preparando cámara...
-            </div>
-          )}
-        </div>
-      )}
       {/* Resultado */}
       {result && !reloading && !cancelReload && (
         <div className="w-full max-w-xs sm:max-w-md mx-auto">
           {result.access ? (
             <div className="bg-green-100 text-green-800 p-3 rounded-lg mb-2 text-center">
-              <h2 className="font-bold text-base sm:text-lg mb-1">Acceso concedido</h2>
-              <p className="text-sm sm:text-base">{result.name}</p>
-              <p className="text-sm sm:text-base">{result.message}</p>
+              <div className="font-bold text-lg">Acceso concedido</div>
+              {result.name && <div className="text-base text-gray-700">{result.name}</div>}
+              {result.message && <div className="text-base text-gray-500">{result.message}</div>}
             </div>
           ) : (
             <div className="bg-red-100 text-red-800 p-3 rounded-lg mb-2 text-center">
-              <h2 className="font-bold text-base sm:text-lg mb-1">Acceso denegado</h2>
-              <p className="text-sm sm:text-base">{result.message}</p>
+              <div className="font-bold text-lg">Acceso denegado</div>
+              {result.name && <div className="text-base text-gray-700">{result.name}</div>}
+              {result.message && <div className="text-base text-gray-500">{result.message}</div>}
             </div>
           )}
         </div>
@@ -236,14 +236,28 @@ export default function ScanPage() {
         </div>
       )}
       {/* Botón de reinicio (solo si no hay resultado) */}
-      {scanning && !result && (
-        <div className="flex flex-col items-center w-full max-w-xs sm:max-w-md mx-auto mt-1">
+      {!scanning && !result && (
+        <div className="flex flex-col gap-3 w-full max-w-xs sm:max-w-md mx-auto mb-2">
           <button
-            onClick={robustResetAndActivate}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full text-base sm:text-lg"
+            onClick={activarCamara}
           >
-            Nuevo escaneo
+            Activar cámara
           </button>
+        </div>
+      )}
+      {/* Vista de cámara personalizada */}
+      {showReader && (
+        <div
+          id="reader"
+          className={`w-full max-w-[400px] mx-auto mb-4 sm:mb-8 rounded-lg shadow-lg ${cameraActive ? '' : 'hidden'}`}
+          style={{ maxWidth: '98vw', minHeight: 0, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
+        >
+          {preparandoCamara && (
+            <div className="w-full text-center text-blue-600 py-4 animate-pulse text-base sm:text-lg font-semibold">
+              Preparando cámara...
+            </div>
+          )}
         </div>
       )}
     </div>
