@@ -156,6 +156,20 @@ export default function ScanPage() {
     };
   }, []);
 
+  // Recarga automática tras error de cámara
+  useEffect(() => {
+    if (
+      error &&
+      error.includes('cámara') &&
+      !preparandoCamara
+    ) {
+      const timeout = setTimeout(() => {
+        window.location.reload();
+      }, 2200); // Espera 2.2s para que el usuario vea el mensaje
+      return () => clearTimeout(timeout);
+    }
+  }, [error, preparandoCamara]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[100dvh] sm:min-h-0 sm:max-h-none sm:overflow-visible max-h-[100dvh] overflow-hidden p-1 sm:p-6 bg-white">
       <h1 className="text-lg sm:text-2xl font-bold mb-2 text-blue-600">Escanear QR</h1>
@@ -163,12 +177,7 @@ export default function ScanPage() {
         <div className="bg-red-100 text-red-800 p-2 rounded-lg mb-2 text-center w-full max-w-xs sm:max-w-md mx-auto text-sm sm:text-base">
           {error}
           {error.includes('cámara') && (
-            <button
-              className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
-              onClick={forceReload}
-            >
-              Reintentar
-            </button>
+            <div className="mt-2 text-blue-800 text-xs animate-pulse">Recargando automáticamente...</div>
           )}
         </div>
       )}
