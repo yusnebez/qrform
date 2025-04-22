@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats, Html5QrcodeScannerState } from 'html5-qrcode';
 import axios from 'axios';
 import Alert from '@/components/Alert';
+import { useRouter } from 'next/router';
 
 interface ScanResult {
   access: boolean;
@@ -19,6 +20,17 @@ export default function ScanPage() {
   const [reloading, setReloading] = useState(false);
   const [cancelReload, setCancelReload] = useState(false);
   const [showReader, setShowReader] = useState(true);
+  const router = useRouter();
+
+  // Habilitar la cámara automáticamente al entrar si viene de index
+  useEffect(() => {
+    // Solo activar si no hay resultado ni error ni está activa la cámara
+    if (!result && !error && !cameraActive && typeof window !== 'undefined') {
+      activarCamara();
+    }
+    // Solo se ejecuta en primer render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Iniciar cámara personalizada
   const activarCamara = async () => {
@@ -138,25 +150,13 @@ export default function ScanPage() {
     }
     // Si reloading está activo y no se canceló, inicia proceso automático
     if (reloading && !cancelReload) {
-      // Simula el proceso automático de ir a inicio, escanear y activar cámara
-      const t = setTimeout(async () => {
-        setResult(null);
-        setError('');
-        setScanning(false);
-        setCameraActive(false);
-        setPreparandoCamara(true);
-        setShowReader(false);
-        // Espera breve para "simular" navegación y activación
-        setTimeout(() => {
-          setShowReader(true);
-          setPreparandoCamara(false);
-          activarCamara();
-          setReloading(false);
-        }, 1200);
-      }, 1800); // Máximo 3s en total
+      // Redirige a la página de escaneo QR desde index
+      const t = setTimeout(() => {
+        router.push('/scan');
+      }, 1800); // Máximo 3s en total (1s + 1.8s)
       return () => clearTimeout(t);
     }
-  }, [reloading, cancelReload, result]);
+  }, [reloading, cancelReload, result, router]);
 
   // Limpiar escáner al desmontar
   useEffect(() => {
@@ -195,44 +195,35 @@ export default function ScanPage() {
           )}
         </div>
       )}
-      {/* Resultado */}
-      {result && !reloading && !cancelReload && (
-        <div className="w-full max-w-xs sm:max-w-md mx-auto">
-          {result.access ? (
-            <div className="bg-green-100 text-green-800 p-3 rounded-lg mb-2 text-center">
-              <div className="font-bold text-lg">Acceso concedido</div>
-              {result.name && <div className="text-base text-gray-700">{result.name}</div>}
-              {result.message && <div className="text-base text-gray-500">{result.message}</div>}
-            </div>
-          ) : (
-            <div className="bg-red-100 text-red-800 p-3 rounded-lg mb-2 text-center">
-              <div className="font-bold text-lg">Acceso denegado</div>
-              {result.name && <div className="text-base text-gray-700">{result.name}</div>}
-              {result.message && <div className="text-base text-gray-500">{result.message}</div>}
+      {/* Resultado + recarga automática y cancelar */}
+      {result && (
+        <div className="w-full max-w-xs sm:max-w-md mx-auto flex flex-col items-center gap-4">
+          <div className={`w-full ${result.access ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'} p-3 rounded-lg mb-2 text-center`}>
+            <div className="font-bold text-lg">{result.access ? 'Acceso concedido' : 'Acceso denegado'}</div>
+            {result.name && <div className="text-base text-gray-700">{result.name}</div>}
+            {result.message && <div className="text-base text-gray-500">{result.message}</div>}
+          </div>
+          {reloading && !cancelReload && (
+            <div className="flex flex-row items-center gap-4 animate-pulse">
+              <button
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md text-base font-semibold"
+                disabled
+              >
+                <span className="inline-block">Cargando cámara nuevamente</span>
+                <span className="inline-block animate-bounce">...</span>
+                <svg className="w-5 h-5 ml-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+              </button>
+              <button
+                className="bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded-lg text-base"
+                onClick={() => setCancelReload(true)}
+              >
+                Cancelar
+              </button>
             </div>
           )}
-        </div>
-      )}
-      {/* Botón de recarga automática y cancelar */}
-      {result && reloading && !cancelReload && (
-        <div className="flex flex-row items-center gap-4 mt-6 animate-pulse">
-          <button
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md text-base font-semibold"
-            disabled
-          >
-            <span className="inline-block">Cargando cámara nuevamente</span>
-            <span className="inline-block animate-bounce">...</span>
-            <svg className="w-5 h-5 ml-2 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-            </svg>
-          </button>
-          <button
-            className="bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded-lg text-base"
-            onClick={() => setCancelReload(true)}
-          >
-            Cancelar
-          </button>
         </div>
       )}
       {/* Botón de reinicio (solo si no hay resultado) */}
