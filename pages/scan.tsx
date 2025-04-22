@@ -19,6 +19,8 @@ export default function ScanPage() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const [showReader, setShowReader] = useState(true);
+  const [reloading, setReloading] = useState(false);
+  const [cancelReload, setCancelReload] = useState(false);
 
   // Iniciar cámara personalizada
   const activarCamara = async () => {
@@ -115,60 +117,48 @@ export default function ScanPage() {
     // console.error(err);
   };
 
-  // Lanzar cuenta atrás y reactivar cámara
+  // Cuando hay resultado, mostrar el flujo de recarga/cancelar
   useEffect(() => {
     if (result) {
-      setCountdown(3);
-      countdownRef.current = setInterval(() => {
-        setCountdown(prev => {
-          if (prev === 1) {
-            clearInterval(countdownRef.current!);
-            setCountdown(null);
-            robustResetAndActivate();
-            return null;
-          }
-          return prev! - 1;
-        });
-      }, 1000);
-    } else {
-      if (countdownRef.current) clearInterval(countdownRef.current);
-      setCountdown(null);
+      setReloading(false);
+      setCancelReload(false);
     }
-    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, [result]);
 
-  // Nuevo escaneo inmediato (detiene countdown y reactiva cámara)
-  const handleNuevoEscaneo = async () => {
-    if (countdownRef.current) clearInterval(countdownRef.current);
-    setCountdown(null);
-    await robustResetAndActivate();
-  };
-
-  // Limpiar escáner al desmontar
+  // Flujo de recarga automática tras resultado
   useEffect(() => {
-    return () => {
-      if (scannerRef.current) {
-        try {
-          scannerRef.current.stop();
-          scannerRef.current.clear();
-        } catch (error) {}
-      }
-    };
-  }, []);
-
-  // Recarga automática tras error de cámara
-  useEffect(() => {
-    if (
-      error &&
-      error.includes('cámara') &&
-      !preparandoCamara
-    ) {
-      const timeout = setTimeout(() => {
-        window.location.reload();
-      }, 2200); // Espera 2.2s para que el usuario vea el mensaje
-      return () => clearTimeout(timeout);
+    if (result && !reloading && !cancelReload) {
+      // Espera 1s y muestra el botón de recarga/cancelar
+      const t = setTimeout(() => {
+        setReloading(true);
+      }, 1000);
+      return () => clearTimeout(t);
     }
-  }, [error, preparandoCamara]);
+    // Si el usuario cancela, no hace nada
+    if (cancelReload) {
+      setReloading(false);
+    }
+    // Si reloading está activo y no se canceló, inicia proceso automático
+    if (reloading && !cancelReload) {
+      // Simula el proceso automático de ir a inicio, escanear y activar cámara
+      const t = setTimeout(async () => {
+        setResult(null);
+        setError('');
+        setScanning(false);
+        setCameraActive(false);
+        setPreparandoCamara(true);
+        setShowReader(false);
+        // Espera breve para "simular" navegación y activación
+        setTimeout(() => {
+          setShowReader(true);
+          setPreparandoCamara(false);
+          activarCamara();
+          setReloading(false);
+        }, 1200);
+      }, 1800); // Máximo 3s en total
+      return () => clearTimeout(t);
+    }
+  }, [reloading, cancelReload, result]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[100dvh] sm:min-h-0 sm:max-h-none sm:overflow-visible max-h-[100dvh] overflow-hidden p-1 sm:p-6 bg-white">
@@ -207,7 +197,7 @@ export default function ScanPage() {
         </div>
       )}
       {/* Resultado */}
-      {result && (
+      {result && !reloading && !cancelReload && (
         <div className="w-full max-w-xs sm:max-w-md mx-auto">
           {result.access ? (
             <div className="bg-green-100 text-green-800 p-3 rounded-lg mb-2 text-center">
@@ -221,18 +211,28 @@ export default function ScanPage() {
               <p className="text-sm sm:text-base">{result.message}</p>
             </div>
           )}
-          {/* Botón y cuenta atrás */}
-          <div className="flex flex-col items-center gap-2">
-            <button
-              onClick={handleNuevoEscaneo}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full text-base sm:text-lg"
-            >
-              Nuevo escaneo{countdown !== null ? ` (${countdown})` : ''}
-            </button>
-            {countdown !== null && (
-              <p className="text-blue-700 font-semibold text-lg sm:text-xl animate-pulse">La cámara se reactivará en {countdown} segundo{countdown === 1 ? '' : 's'}...</p>
-            )}
-          </div>
+        </div>
+      )}
+      {/* Botón de recarga automática y cancelar */}
+      {result && reloading && !cancelReload && (
+        <div className="flex flex-row items-center gap-4 mt-6 animate-pulse">
+          <button
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md text-base font-semibold"
+            disabled
+          >
+            <span className="inline-block">Cargando cámara nuevamente</span>
+            <span className="inline-block animate-bounce">...</span>
+            <svg className="w-5 h-5 ml-2 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+          </button>
+          <button
+            className="bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded-lg text-base"
+            onClick={() => setCancelReload(true)}
+          >
+            Cancelar
+          </button>
         </div>
       )}
       {/* Botón de reinicio (solo si no hay resultado) */}
