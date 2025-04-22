@@ -18,6 +18,7 @@ export default function ScanPage() {
   const scannerRef = useRef<any>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const [showReader, setShowReader] = useState(true);
 
   // Iniciar cámara personalizada
   const activarCamara = async () => {
@@ -73,21 +74,14 @@ export default function ScanPage() {
     setScanning(false);
     setCameraActive(false);
     setPreparandoCamara(true);
-    // Elimina el div del reader y lo recrea limpio
-    const readerDiv = document.getElementById('reader');
-    if (readerDiv) {
-      readerDiv.remove();
-      const newDiv = document.createElement('div');
-      newDiv.id = 'reader';
-      newDiv.className = readerDiv.className;
-      Object.assign(newDiv.style, readerDiv.style);
-      readerDiv.parentNode?.insertBefore(newDiv, readerDiv.nextSibling);
-    }
-    // Espera más antes de reactivar la cámara
+    setShowReader(false); // Fuerza desmontaje del div
     setTimeout(() => {
-      setPreparandoCamara(false);
-      activarCamara();
-    }, 400);
+      setShowReader(true); // React lo vuelve a montar limpio
+      setTimeout(() => {
+        setPreparandoCamara(false);
+        activarCamara();
+      }, 200);
+    }, 200);
   };
 
   const onScanSuccess = async (decodedText: string) => {
@@ -166,17 +160,19 @@ export default function ScanPage() {
         </div>
       )}
       {/* Vista de cámara personalizada */}
-      <div
-        id="reader"
-        className={`w-full max-w-[400px] mx-auto mb-4 sm:mb-8 rounded-lg shadow-lg ${cameraActive ? '' : 'hidden'}`}
-        style={{ maxWidth: '98vw', minHeight: 0, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
-      >
-        {preparandoCamara && (
-          <div className="w-full text-center text-blue-600 py-4 animate-pulse text-base sm:text-lg font-semibold">
-            Preparando cámara...
-          </div>
-        )}
-      </div>
+      {showReader && (
+        <div
+          id="reader"
+          className={`w-full max-w-[400px] mx-auto mb-4 sm:mb-8 rounded-lg shadow-lg ${cameraActive ? '' : 'hidden'}`}
+          style={{ maxWidth: '98vw', minHeight: 0, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}
+        >
+          {preparandoCamara && (
+            <div className="w-full text-center text-blue-600 py-4 animate-pulse text-base sm:text-lg font-semibold">
+              Preparando cámara...
+            </div>
+          )}
+        </div>
+      )}
       {/* Resultado */}
       {result && (
         <div className="w-full max-w-xs sm:max-w-md mx-auto">
