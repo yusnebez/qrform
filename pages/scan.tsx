@@ -112,11 +112,22 @@ export default function ScanPage() {
     window.location.reload();
   };
 
+  // Redirigir a /result con datos tras escanear
+  const goToResultPage = (data: any) => {
+    const params = new URLSearchParams({
+      name: data.name || '',
+      access: data.access ? 'true' : 'false',
+      message: data.message || '',
+      waitTime: data.waitTime ? String(data.waitTime) : ''
+    });
+    router.replace(`/result?${params.toString()}`);
+  };
+
   const onScanSuccess = async (decodedText: string) => {
     await stopScanner();
     try {
       const response = await axios.get(`/api/check?u=${decodedText}`);
-      setResult(response.data);
+      goToResultPage(response.data);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error verificando el código QR.');
     }
