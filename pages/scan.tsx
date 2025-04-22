@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats, Html5QrcodeScannerState } from 'html5-qrcode';
 import axios from 'axios';
 import Alert from '@/components/Alert';
 
@@ -75,12 +75,25 @@ export default function ScanPage() {
     setCameraActive(false);
     setPreparandoCamara(true);
     setShowReader(false); // Fuerza desmontaje del div
-    setTimeout(() => {
+    setTimeout(async () => {
       setShowReader(true); // React lo vuelve a montar limpio
-      setTimeout(() => {
-        setPreparandoCamara(false);
-        activarCamara();
-      }, 200);
+      // Espera más antes de reactivar la cámara
+      setTimeout(async () => {
+        // Comprueba si hay cámaras disponibles antes de intentar activar
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (!devices || devices.length === 0) {
+            setPreparandoCamara(false);
+            setError('No se detectó ninguna cámara disponible. Asegúrate de que ningún otro programa la esté usando.');
+            return;
+          }
+          setPreparandoCamara(false);
+          activarCamara();
+        } catch (e) {
+          setPreparandoCamara(false);
+          setError('No se pudo acceder a la cámara. Verifica los permisos y que ningún otro programa la esté usando.');
+        }
+      }, 800);
     }, 200);
   };
 
