@@ -16,7 +16,7 @@ export default function ScanPage() {
   const [cameraActive, setCameraActive] = useState(false);
   const [preparandoCamara, setPreparandoCamara] = useState(false);
   const scannerRef = useRef<any>(null);
-  const [showLoadingCamera, setShowLoadingCamera] = useState(false);
+  const [reloading, setReloading] = useState(false);
   const [cancelReload, setCancelReload] = useState(false);
   const [showReader, setShowReader] = useState(true);
 
@@ -115,31 +115,48 @@ export default function ScanPage() {
     // console.error(err);
   };
 
-  // Cuando hay resultado, inicia el flujo de recarga/cancelar
+  // Cuando hay resultado, mostrar el flujo de recarga/cancelar
   useEffect(() => {
     if (result) {
-      setShowLoadingCamera(true);
+      setReloading(false);
       setCancelReload(false);
-      // Tras 2.5s, reactiva la cámara automáticamente (sin mostrar nada más)
+    }
+  }, [result]);
+
+  // Flujo de recarga automática tras resultado
+  useEffect(() => {
+    if (result && !reloading && !cancelReload) {
+      // Espera 1s y muestra el botón de recarga/cancelar
       const t = setTimeout(() => {
-        if (!cancelReload) {
-          setResult(null);
-          setError('');
-          setScanning(false);
-          setCameraActive(false);
-          setPreparandoCamara(true);
-          setShowReader(false);
-          setTimeout(() => {
-            setShowReader(true);
-            setPreparandoCamara(false);
-            setShowLoadingCamera(false);
-            activarCamara();
-          }, 1000);
-        }
-      }, 2500);
+        setReloading(true);
+      }, 1000);
       return () => clearTimeout(t);
     }
-  }, [result, cancelReload]);
+    // Si el usuario cancela, no hace nada
+    if (cancelReload) {
+      setReloading(false);
+    }
+    // Si reloading está activo y no se canceló, inicia proceso automático
+    if (reloading && !cancelReload) {
+      // Simula el proceso automático de ir a inicio, escanear y activar cámara
+      const t = setTimeout(async () => {
+        setResult(null);
+        setError('');
+        setScanning(false);
+        setCameraActive(false);
+        setPreparandoCamara(true);
+        setShowReader(false);
+        // Espera breve para "simular" navegación y activación
+        setTimeout(() => {
+          setShowReader(true);
+          setPreparandoCamara(false);
+          activarCamara();
+          setReloading(false);
+        }, 1200);
+      }, 1800); // Máximo 3s en total
+      return () => clearTimeout(t);
+    }
+  }, [reloading, cancelReload, result]);
 
   // Limpiar escáner al desmontar
   useEffect(() => {
@@ -153,18 +170,62 @@ export default function ScanPage() {
     };
   }, []);
 
+  // Recarga automática tras error de cámara
+  useEffect(() => {
+    if (
+      error &&
+      error.includes('cámara') &&
+      !preparandoCamara
+    ) {
+      const timeout = setTimeout(() => {
+        window.location.reload();
+      }, 2200); // Espera 2.2s para que el usuario vea el mensaje
+      return () => clearTimeout(timeout);
+    }
+  }, [error, preparandoCamara]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[100dvh] sm:min-h-0 sm:max-h-none sm:overflow-visible max-h-[100dvh] overflow-hidden p-1 sm:p-6 bg-white">
       <h1 className="text-lg sm:text-2xl font-bold mb-2 text-blue-600">Escanear QR</h1>
-      {/* Mensaje de cargando cámara y cancelar (tras resultado) */}
-      {showLoadingCamera && (
-        <div className="flex flex-row items-center gap-4 mt-10 animate-pulse">
+      {error && (
+        <div className="bg-red-100 text-red-800 p-2 rounded-lg mb-2 text-center w-full max-w-xs sm:max-w-md mx-auto text-sm sm:text-base">
+          {error}
+          {error.includes('cámara') && (
+            <div className="mt-2 text-blue-800 text-xs animate-pulse">Recargando automáticamente...</div>
+          )}
+        </div>
+      )}
+      {/* Resultado */}
+      {result && !reloading && !cancelReload && (
+        <div className="w-full max-w-xs sm:max-w-md mx-auto">
+          {result.access ? (
+            <div className="bg-green-100 text-green-800 p-3 rounded-lg mb-2 text-center">
+              <div className="font-bold text-lg">Acceso concedido</div>
+              {result.name && <div className="text-base text-gray-700">{result.name}</div>}
+              {result.message && <div className="text-base text-gray-500">{result.message}</div>}
+            </div>
+          ) : (
+            <div className="bg-red-100 text-red-800 p-3 rounded-lg mb-2 text-center">
+              <div className="font-bold text-lg">Acceso denegado</div>
+              {result.name && <div className="text-base text-gray-700">{result.name}</div>}
+              {result.message && <div className="text-base text-gray-500">{result.message}</div>}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Botón de recarga automática y cancelar */}
+      {result && reloading && !cancelReload && (
+        <div className="flex flex-row items-center gap-4 mt-6 animate-pulse">
           <button
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md text-base font-semibold"
             disabled
           >
             <span className="inline-block">Cargando cámara nuevamente</span>
             <span className="inline-block animate-bounce">...</span>
+            <svg className="w-5 h-5 ml-2 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
           </button>
           <button
             className="bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded-lg text-base"
@@ -174,14 +235,12 @@ export default function ScanPage() {
           </button>
         </div>
       )}
-      {/* Botón activar cámara SOLO si no hay cámara activa, resultado ni cargando */}
-      {!scanning && !result && !showLoadingCamera && (
+      {/* Botón de reinicio (solo si no hay resultado) */}
+      {!scanning && !result && (
         <div className="flex flex-col gap-3 w-full max-w-xs sm:max-w-md mx-auto mb-2">
           <button
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full text-base sm:text-lg"
-            id="btn-activar-camara"
             onClick={activarCamara}
-            autoFocus
           >
             Activar cámara
           </button>
