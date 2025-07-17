@@ -28,6 +28,9 @@ const ResultPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
       });
+      if (!res.ok) {
+        throw new Error('Error en la respuesta del servidor');
+      }
       const data = await res.json();
       if (data.success) {
         alert('QR desbloqueado correctamente');
@@ -36,6 +39,7 @@ const ResultPage = () => {
         alert('No se pudo desbloquear el QR');
       }
     } catch (error) {
+      console.error('Error al intentar desbloquear el QR:', error);
       alert('Error al intentar desbloquear el QR');
     }
   };
@@ -49,7 +53,7 @@ const ResultPage = () => {
             : `${name} Ya ha sido utilizado el acceso a este partido`}
         </h1>
         <p className="text-base mb-4 text-gray-700">{message}</p>
-        {access !== 'true' && (
+        {access === 'true' && (
           <div className="flex flex-row items-center justify-center gap-4 mb-4">
             <button
               className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-base font-semibold shadow"
@@ -57,7 +61,6 @@ const ResultPage = () => {
             >
               Salir del partido
             </button>
-            {waitTime && <span className="text-base text-blue-700">{waitTime} min restante</span>}
           </div>
         )}
         <div className="flex flex-row items-center justify-center gap-4">
