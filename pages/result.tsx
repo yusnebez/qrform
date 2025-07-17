@@ -12,6 +12,9 @@ const ResultPage = () => {
   const router = useRouter();
   const { name, access, message, waitTime } = router.query;
 
+  console.log('Access:', access);
+  console.log('WaitTime:', waitTime);
+
   const handleScanAnother = () => {
     router.replace('/scan');
   };
@@ -52,7 +55,7 @@ const ResultPage = () => {
               className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-base font-semibold shadow"
               onClick={handleUnblockQr}
             >
-              Desbloquear QR
+             Salir del partido
             </button>
             <span className="text-base text-blue-700">{waitTime} min restante</span>
           </div>
