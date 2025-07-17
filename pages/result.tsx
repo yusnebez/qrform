@@ -12,36 +12,8 @@ const ResultPage = () => {
   const router = useRouter();
   const { name, access, message, waitTime } = router.query;
 
-  console.log('Access:', access);
-  console.log('WaitTime:', waitTime);
-
   const handleScanAnother = () => {
     router.replace('/scan');
-  };
-
-  // Nueva función para desbloquear QR
-  const handleUnblockQr = async () => {
-    // Simulación de petición al backend
-    try {
-      const res = await fetch('/api/unblock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      });
-      if (!res.ok) {
-        throw new Error('Error en la respuesta del servidor');
-      }
-      const data = await res.json();
-      if (data.success) {
-        alert('QR desbloqueado correctamente');
-        router.replace('/scan');
-      } else {
-        alert('No se pudo desbloquear el QR');
-      }
-    } catch (error) {
-      console.error('Error al intentar desbloquear el QR:', error);
-      alert('Error al intentar desbloquear el QR');
-    }
   };
 
   return (
@@ -53,24 +25,15 @@ const ResultPage = () => {
             : `${name} Ya ha sido utilizado el acceso a este partido`}
         </h1>
         <p className="text-base mb-4 text-gray-700">{message}</p>
-        {access === 'true' && (
-          <div className="flex flex-row items-center justify-center gap-4 mb-4">
-            <button
-              className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-base font-semibold shadow"
-              onClick={handleUnblockQr}
-            >
-              Salir del partido
-            </button>
-          </div>
+        {access !== 'true' && waitTime && (
+          <p className="text-base text-blue-700 mb-4">Podrá volver a usarlo en {waitTime} minutos</p>
         )}
-        <div className="flex flex-row items-center justify-center gap-4">
-          <button
-            className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-semibold shadow"
-            onClick={handleScanAnother}
-          >
-            Escanear otro QR
-          </button>
-        </div>
+        <button
+          className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-semibold shadow"
+          onClick={handleScanAnother}
+        >
+          Escanear otro QR
+        </button>
       </div>
     </div>
   );
