@@ -128,16 +128,19 @@ export default function Home() {
             value={form.phone}
             onChange={handleChange}
             type="tel"
+            className="w-full border rounded px-3 py-2"
           />
           {error && <div className="text-red-600 text-center mt-2">{error}</div>}
           {success && <div className="text-green-600 text-center mt-2">{success}</div>}
-          <button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mt-2 disabled:opacity-60"
-            disabled={loading}
-          >
-            {loading ? 'Creando...' : 'Crear usuario'}
-          </button>
+          <div>
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mt-2 disabled:opacity-60"
+              disabled={loading}
+            >
+              {loading ? 'Creando...' : 'Crear usuario'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
