@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 
+
 const API_URL = '/api/tokens';
 
 export default function AdminTokens() {
@@ -49,7 +50,7 @@ export default function AdminTokens() {
           <ul className="list-disc pl-5">
             {generated.map(token => (
               <li key={token} className="mb-1 break-all">
-                <span className="font-mono">{`${window.location.origin}/?token=${token}`}</span>
+                <span className="font-mono">{`https://formularioarucascf.vercel.app/?token=${token}`}</span>
               </li>
             ))}
           </ul>

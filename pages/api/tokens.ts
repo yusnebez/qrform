@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 const TOKENS_PATH = path.join(process.cwd(), 'pages', 'api', 'tokens.json');
 const EXPIRATION_DAYS = 14;
