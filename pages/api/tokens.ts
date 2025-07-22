@@ -1,67 +1,71 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import fs from 'fs';
-import path from 'path';
+import { connectDB } from '@/utils/db';
+import Token from '@/models/Token';
 import crypto from 'crypto';
 
-const TOKENS_PATH = path.join(process.cwd(), 'pages', 'api', 'tokens.json');
-const EXPIRATION_DAYS = 14;
+// Get the admin token from environment variables for security
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'DEFAULT_ADMIN_TOKEN_REPLACE_ME';
 
-function loadTokens() {
-  if (!fs.existsSync(TOKENS_PATH)) return { tokens: [], adminToken: '' };
-  return JSON.parse(fs.readFileSync(TOKENS_PATH, 'utf-8'));
-}
-
-function saveTokens(data: any) {
-  fs.writeFileSync(TOKENS_PATH, JSON.stringify(data, null, 2));
-}
-
-function purgeExpired(tokens: any[]) {
-  const now = Date.now();
-  return tokens.filter(t => !t.used && (now - t.created < EXPIRATION_DAYS * 86400000));
-}
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  let { tokens, adminToken } = loadTokens();
-  let changed = false;
-
-  // Purge expired tokens on every call
-  const validTokens = purgeExpired(tokens);
-  if (validTokens.length !== tokens.length) {
-    tokens = validTokens;
-    saveTokens({ tokens, adminToken });
-    changed = true;
-  }
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  await connectDB();
 
   if (req.method === 'GET') {
+    // Return admin token if requested
+    if (req.query.getAdminToken === 'true') {
+      return res.status(200).json({ adminToken: ADMIN_TOKEN });
+    }
+
     // Validate a token
     const { token } = req.query;
-    if (!token || typeof token !== 'string') return res.status(400).json({ valid: false });
-    if (token === adminToken) return res.status(200).json({ valid: true, admin: true });
-    const found = tokens.find(t => t.token === token && !t.used);
-    return res.status(200).json({ valid: !!found, admin: false });
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ valid: false, message: 'Token no proporcionado.' });
+    }
+
+    if (token === ADMIN_TOKEN) {
+      return res.status(200).json({ valid: true, admin: true });
+    }
+
+    const foundToken = await Token.findOne({ token: token, used: false });
+    return res.status(200).json({ valid: !!foundToken, admin: false });
   }
 
   if (req.method === 'POST') {
     // Mark token as used
     const { token } = req.body;
-    if (!token || typeof token !== 'string') return res.status(400).json({ success: false });
-    if (token === adminToken) return res.status(200).json({ success: true });
-    const idx = tokens.findIndex(t => t.token === token && !t.used);
-    if (idx === -1) return res.status(404).json({ success: false });
-    tokens[idx].used = true;
-    saveTokens({ tokens, adminToken });
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ success: false, message: 'Token no proporcionado.' });
+    }
+
+    if (token === ADMIN_TOKEN) {
+      return res.status(200).json({ success: true }); // Admin token is not marked as used
+    }
+
+    const result = await Token.updateOne({ token: token, used: false }, { $set: { used: true } });
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Token no válido o ya utilizado.' });
+    }
+
     return res.status(200).json({ success: true });
   }
 
   if (req.method === 'PUT') {
     // Generate tokens
     const { count } = req.body;
-    if (!count || typeof count !== 'number' || count < 1) return res.status(400).json({ tokens: [] });
+    if (!count || typeof count !== 'number' || count < 1 || count > 100) {
+      return res.status(400).json({ success: false, message: 'Cantidad no válida.' });
+    }
+
     const newTokens = Array.from({ length: count }, () => ({ token: crypto.randomUUID(), created: Date.now(), used: false }));
-    tokens = [...tokens, ...newTokens];
-    saveTokens({ tokens, adminToken });
-    return res.status(200).json({ tokens: newTokens.map(t => t.token) });
+    
+    try {
+      await Token.insertMany(newTokens);
+      return res.status(201).json({ success: true, tokens: newTokens.map(t => t.token) });
+    } catch (error) {
+      console.error('Error creating tokens:', error);
+      return res.status(500).json({ success: false, message: 'Error al generar los tokens.' });
+    }
   }
 
-  return res.status(405).end();
+  return res.status(405).json({ message: 'Método no permitido' });
 }
