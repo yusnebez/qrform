@@ -57,12 +57,6 @@ export default function AdminTokens() {
         </div>
       )}
       <hr className="my-6" />
-      <button onClick={handleShowAdmin} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 mb-2">Mostrar token maestro</button>
-      {showAdmin && (
-        <div className="bg-gray-100 rounded p-3 mt-2">
-          <span className="font-mono text-sm">{adminToken}</span>
-        </div>
-      )}
       <p className="text-xs text-gray-500 mt-6">Esta página es interna y solo debe usarse por administradores.</p>
     </div>
   );
