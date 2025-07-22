@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 
 interface User {
   name: string;
@@ -67,7 +68,7 @@ export default function Home() {
       setLoading(false);
       return;
     }
-    setSuccess('Usuario creado exitosamente.');
+    setSuccess('¡Enhorabuena! Te has inscrito correctamente como abonado del Arucas CF. Pronto recibirás más información.');
     setForm({ name: '', email: '', phone: '' });
     setLoading(false);
     // Marcar token como usado si no es admin
@@ -102,7 +103,10 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md mt-12">
-        <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">Registro de Usuario</h2>
+        <div className="flex justify-center mb-4">
+          <Image src="/logo.png" alt="Logo Arucas CF" width={100} height={100} />
+        </div>
+        <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">Inscripción de abonado para Arucas CF</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
@@ -142,6 +146,9 @@ export default function Home() {
             </button>
           </div>
         </form>
+        <p className="text-xs text-gray-500 mt-6 text-center">
+          Este enlace es de un solo uso. Una vez que te hayas inscrito, el acceso quedará invalidado. Si no completas el registro, deberás solicitar un nuevo enlace para volver a intentarlo.
+        </p>
       </div>
     </div>
   );
