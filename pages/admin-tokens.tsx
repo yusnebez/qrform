@@ -35,7 +35,10 @@ export default function AdminTokens() {
 
   const handleCopyAll = () => {
     const allLinks = generated.map(token => `${BASE_URL}/?token=${token}`).join('\n');
-    handleCopy(allLinks);
+    navigator.clipboard.writeText(allLinks).then(() => {
+      setCopied('all'); // Use a special identifier for 'copy all'
+      setTimeout(() => setCopied(null), 2000);
+    });
   };
 
   const handleDownload = () => {
@@ -97,7 +100,7 @@ export default function AdminTokens() {
                 onClick={handleCopyAll}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
               >
-                Copiar Todos
+                {copied === 'all' ? '¡Copiado!' : 'Copiar Todos'}
               </button>
               <button 
                 onClick={handleDownload}
