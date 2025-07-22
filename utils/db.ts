@@ -3,42 +3,22 @@ import mongoose from 'mongoose';
 const MONGODB_URI = process.env.MONGODB_URI || '';
 
 if (!MONGODB_URI) {
-  throw new Error(
-    'Por favor define la variable de entorno MONGODB_URI en .env.local'
-  );
+  throw new Error('Debe definir la variable de entorno MONGODB_URI');
 }
 
-let cached = global.mongoose;
+let cached = (global as any).mongoose;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
-const connectDB = async () => {
-  if (cached.conn) {
-    return cached.conn;
-  }
-
+export async function connectDB() {
+  if (cached.conn) return cached.conn;
   if (!cached.promise) {
-    const opts = {
+    cached.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
-      dbName: 'qraccess',
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log('MongoDB Connected Successfully');
-      return mongoose;
-    });
+    }).then((mongoose) => mongoose);
   }
-  
-  try {
-    cached.conn = await cached.promise;
-    return cached.conn;
-  } catch (error) {
-    console.error('Error connecting to MongoDB:', error);
-    cached.promise = null;
-    throw error;
-  }
-};
-
-export { connectDB };
+  cached.conn = await cached.promise;
+  return cached.conn;
+}

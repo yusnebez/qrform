@@ -1,21 +1,144 @@
-import React from 'react';
-import Link from 'next/link';
+import React, { useState } from 'react';
+
+interface User {
+  name: string;
+  email: string;
+  phone?: string;
+}
+
+const fakeExistingEmails = ["test@example.com", "admin@example.com"];
+
+import { useEffect } from 'react';
 
 export default function Home() {
+  const [form, setForm] = useState<User>({ name: '', email: '', phone: '' });
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [access, setAccess] = useState<'checking' | 'denied' | 'allowed' | 'admin'>('checking');
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const t = url.searchParams.get('token');
+    if (!t) {
+      setAccess('denied');
+      return;
+    }
+    setToken(t);
+    fetch(`/api/tokens?token=${t}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.valid) setAccess(data.admin ? 'admin' : 'allowed');
+        else setAccess('denied');
+      })
+      .catch(() => setAccess('denied'));
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setError(null);
+    setSuccess(null);
+  };
+
+  // El email único ahora se valida en backend
+  const checkEmailExists = async (email: string) => false;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    if (!token) return setError('Token inválido.');
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    if (!form.name.trim() || !form.email.trim()) {
+      setError('Nombre y email son obligatorios.');
+      setLoading(false);
+      return;
+    }
+    // Enviar datos al backend
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: form.name, email: form.email, phone: form.phone }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || 'Error al registrar usuario');
+      setLoading(false);
+      return;
+    }
+    setSuccess('Usuario creado exitosamente.');
+    setForm({ name: '', email: '', phone: '' });
+    setLoading(false);
+    // Marcar token como usado si no es admin
+    if (access === 'allowed' && token) {
+      await fetch('/api/tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+    }
+  };
+
+
+  if (access === 'checking') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-lg text-gray-600">Verificando acceso...</div>
+      </div>
+    );
+  }
+  if (access === 'denied') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md mt-12 text-center">
+          <h2 className="text-2xl font-bold mb-4 text-red-600">Acceso denegado</h2>
+          <p className="text-gray-600">Debes acceder desde un enlace válido. Si crees que es un error, contacta con el administrador.</p>
+        </div>
+      </div>
+    );
+  }
+  // allowed o admin
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 sm:p-6 text-center">
-      <h1 className="text-3xl sm:text-4xl font-bold mb-6 text-blue-600">Control de Acceso con QR</h1>
-      <p className="text-base sm:text-xl text-gray-600 max-w-lg mb-8">
-        Sistema de control de acceso mediante códigos QR para abonados.
-        Escanea tu código para verificar tu acceso.
-      </p>
-      <div className="flex flex-col items-center w-full max-w-xs mx-auto gap-4 mt-4">
-        <Link href="/scan" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors text-center w-full">
-          Escanear QR
-        </Link>
-        <Link href="/login?redirect=/admin/list" className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg transition-colors text-center w-full">
-          Administración
-        </Link>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md mt-12">
+        <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">Registro de Usuario</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            name="name"
+            placeholder="Nombre completo"
+            value={form.name}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2"
+            required
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Correo electrónico"
+            value={form.email}
+            onChange={handleChange}
+            className="w-full border rounded px-3 py-2"
+            required
+          />
+          <input
+            name="phone"
+            placeholder="Teléfono (opcional)"
+            value={form.phone}
+            onChange={handleChange}
+            type="tel"
+          />
+          {error && <div className="text-red-600 text-center mt-2">{error}</div>}
+          {success && <div className="text-green-600 text-center mt-2">{success}</div>}
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mt-2 disabled:opacity-60"
+            disabled={loading}
+          >
+            {loading ? 'Creando...' : 'Crear usuario'}
+          </button>
+        </form>
       </div>
     </div>
   );
