@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 
-
 const API_URL = '/api/tokens';
+const BASE_URL = 'https://formularioarucascf.vercel.app';
 
 export default function AdminTokens() {
   const [count, setCount] = useState(1);
-  const [generated, setGenerated] = useState<string[]>([]);
-  const [adminToken, setAdminToken] = useState('');
   const [loading, setLoading] = useState(false);
+  const [generated, setGenerated] = useState<string[]>([]);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [adminToken, setAdminToken] = useState('');
   const [showAdmin, setShowAdmin] = useState(false);
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -22,6 +23,32 @@ export default function AdminTokens() {
     const data = await res.json();
     setGenerated(data.tokens || []);
     setLoading(false);
+    setCopied(null);
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(text);
+      setTimeout(() => setCopied(null), 2000); // Reset after 2 seconds
+    });
+  };
+
+  const handleCopyAll = () => {
+    const allLinks = generated.map(token => `${BASE_URL}/?token=${token}`).join('\n');
+    handleCopy(allLinks);
+  };
+
+  const handleDownload = () => {
+    const allLinks = generated.map(token => `${BASE_URL}/?token=${token}`).join('\n');
+    const blob = new Blob([allLinks], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'tokens.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleShowAdmin = async () => {
@@ -44,16 +71,42 @@ export default function AdminTokens() {
           {loading ? 'Generando...' : 'Generar'}
         </button>
       </form>
+
       {generated.length > 0 && (
-        <div>
-          <h3 className="font-semibold mb-2">Links generados:</h3>
-          <ul className="list-disc pl-5">
-            {generated.map(token => (
-              <li key={token} className="mb-1 break-all">
-                <span className="font-mono">{`https://formularioarucascf.vercel.app/?token=${token}`}</span>
-              </li>
-            ))}
+        <div className="mt-8 w-full">
+          <h3 className="text-xl font-bold mb-4 text-center">Enlaces Generados:</h3>
+          <ul className="space-y-2">
+            {generated.map(token => {
+              const link = `${BASE_URL}/?token=${token}`;
+              return (
+                <li key={token} className="flex items-center justify-between bg-white p-3 rounded-lg shadow">
+                  <span className="text-sm text-gray-700 truncate mr-4">{link}</span>
+                  <button 
+                    onClick={() => handleCopy(link)}
+                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded text-xs transition-colors"
+                  >
+                    {copied === link ? '¡Copiado!' : 'Copiar'}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
+          {generated.length > 1 && (
+            <div className="mt-6 flex justify-center space-x-4">
+               <button 
+                onClick={handleCopyAll}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+              >
+                Copiar Todos
+              </button>
+              <button 
+                onClick={handleDownload}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors"
+              >
+                Descargar (.txt)
+              </button>
+            </div>
+          )}
         </div>
       )}
       <hr className="my-6" />
