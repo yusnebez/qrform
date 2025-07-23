@@ -107,48 +107,55 @@ export default function Home() {
           <Image src="/logo.png" alt="Logo Arucas CF" width={100} height={100} />
         </div>
         <h2 className="text-2xl font-bold mb-6 text-blue-700 text-center">Inscripción de abonado para Arucas CF</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Nombre completo"
-            value={form.name}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Correo electrónico"
-            value={form.email}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-            required
-          />
-          <input
-            name="phone"
-            placeholder="Teléfono (opcional)"
-            value={form.phone}
-            onChange={handleChange}
-            type="tel"
-            className="w-full border rounded px-3 py-2"
-          />
-          {error && <div className="text-red-600 text-center mt-2">{error}</div>}
-          {success && <div className="text-green-600 text-center mt-2">{success}</div>}
-          <div>
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mt-2 disabled:opacity-60"
-              disabled={loading}
-            >
-              {loading ? 'Creando...' : 'Crear usuario'}
-            </button>
+        {success ? (
+          <div className="flex flex-col items-center justify-center min-h-[300px]">
+            <div className="text-green-700 text-3xl font-bold text-center mb-4">{success}</div>
           </div>
-        </form>
-        <p className="text-xs text-gray-500 mt-6 text-center">
-          Este enlace es de un solo uso. Una vez que te hayas inscrito, el acceso quedará invalidado. Si no completas el registro, deberás solicitar un nuevo enlace para volver a intentarlo.
-        </p>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="text"
+              name="name"
+              placeholder="Nombre completo"
+              value={form.name}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              required
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="Correo electrónico"
+              value={form.email}
+              onChange={handleChange}
+              className="w-full border rounded px-3 py-2"
+              required
+            />
+            <input
+              name="phone"
+              placeholder="Teléfono (opcional)"
+              value={form.phone}
+              onChange={handleChange}
+              type="tel"
+              className="w-full border rounded px-3 py-2"
+            />
+            {error && <div className="text-red-600 text-center mt-2">{error}</div>}
+            <div>
+              <button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mt-2 disabled:opacity-60"
+                disabled={loading}
+              >
+                {loading ? 'Creando...' : 'Crear usuario'}
+              </button>
+            </div>
+          </form>
+        )}
+        {!success && (
+          <p className="text-xs text-gray-500 mt-6 text-center">
+            Este enlace es de un solo uso. Una vez que te hayas inscrito, el acceso quedará invalidado. Si no completas el registro, deberás solicitar un nuevo enlace para volver a intentarlo.
+          </p>
+        )}
       </div>
     </div>
   );
