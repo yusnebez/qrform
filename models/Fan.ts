@@ -17,6 +17,16 @@ const FanSchema = new mongoose.Schema({
       message: (props: { value: string }) => `${props.value} no es un número de teléfono español válido.`
     }
   },
+  categoria: {
+    type: String,
+    enum: ['Tercera', 'Sub 23', 'División de honor'],
+    required: false
+  },
+  tokenUsed: {
+    type: String,
+    required: false,
+    index: true
+  },
   lastAccess: { type: Date, default: null },
   lastEntry: { type: Date, default: null },
   lastExit: { type: Date, default: null },

@@ -51,16 +51,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'PUT') {
     // Generate tokens
-    const { count } = req.body;
+    const { count, categoria } = req.body;
     if (!count || typeof count !== 'number' || count < 1 || count > 100) {
       return res.status(400).json({ success: false, message: 'Cantidad no válida.' });
     }
 
-    const newTokens = Array.from({ length: count }, () => ({ token: crypto.randomUUID(), created: Date.now(), used: false }));
+    // Validar categoría si se proporciona
+    const categoriasValidas = ['Tercera', 'Sub 23', 'División de honor'];
+    if (categoria && !categoriasValidas.includes(categoria)) {
+      return res.status(400).json({ success: false, message: 'Categoría no válida.' });
+    }
+
+    const newTokens = Array.from({ length: count }, () => ({
+      token: crypto.randomUUID(),
+      created: Date.now(),
+      used: false,
+      ...(categoria && { categoria }) // Añadir categoría solo si se proporciona
+    }));
     
     try {
-      await Token.insertMany(newTokens);
-      return res.status(201).json({ success: true, tokens: newTokens.map(t => t.token) });
+      const insertedTokens = await Token.insertMany(newTokens);
+      return res.status(201).json({ 
+        success: true, 
+        tokens: insertedTokens.map(t => ({
+          token: t.token,
+          categoria: t.categoria
+        }))
+      });
     } catch (error) {
       console.error('Error creating tokens:', error);
       return res.status(500).json({ success: false, message: 'Error al generar los tokens.' });

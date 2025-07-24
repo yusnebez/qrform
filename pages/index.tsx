@@ -56,11 +56,16 @@ export default function Home() {
       setLoading(false);
       return;
     }
-    // Enviar datos al backend
+    // Enviar datos al backend con el token
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: form.name, email: form.email, phone: form.phone }),
+      body: JSON.stringify({ 
+        name: form.name, 
+        email: form.email, 
+        phone: form.phone,
+        token: token === 'admin' ? null : token // No enviar token si es admin
+      }),
     });
     const data = await res.json();
     if (!res.ok) {
