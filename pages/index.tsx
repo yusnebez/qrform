@@ -158,7 +158,7 @@ export default function Home() {
         )}
         {!success && (
           <p className="text-xs text-gray-500 mt-6 text-center">
-            Este enlace es de un solo uso. Una vez que te hayas inscrito, el acceso quedará invalidado. Si no completas el registro, deberás solicitar un nuevo enlace para volver a intentarlo.
+            Este enlace es de un solo uso. Una vez que te hayas inscrito, el acceso quedará invalidado. Si no completas el registro, deberás solicitar un nuevo enlace para volver a intentarlo a la dirección de correo club@arucascf.es
           </p>
         )}
       </div>
